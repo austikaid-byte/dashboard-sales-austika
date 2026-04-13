@@ -1,54 +1,74 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
 <meta charset="UTF-8">
-<title>Austika Sales Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Austika Dashboard Pro</title>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 body {
-    margin: 0;
-    font-family: Poppins, sans-serif;
-    background: #0F0F0F;
-    color: white;
+    margin:0;
+    font-family:Poppins, sans-serif;
+    background:#0F0F0F;
+    color:#fff;
 }
+
 .container {
-    padding: 30px 40px;
+    padding:30px 40px;
 }
+
 h1 {
-    text-align: center;
-    margin-bottom: 30px;
+    text-align:center;
+    margin-bottom:25px;
 }
-.kpi-container {
-    display: flex;
-    gap: 20px;
-    margin-bottom: 30px;
+
+/* INPUT */
+.input-box {
+    background:#1E1E1E;
+    padding:20px;
+    border-radius:12px;
+    margin-bottom:20px;
 }
-.kpi {
-    flex: 1;
-    background: #1E1E1E;
-    padding: 20px;
-    border-radius: 12px;
-}
-.grid {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 20px;
-}
-.card {
-    background: #1E1E1E;
-    padding: 20px;
-    border-radius: 12px;
-}
+
 input, button {
-    padding: 10px;
-    margin: 5px;
-    border-radius: 8px;
-    border: none;
+    padding:10px;
+    margin:5px;
+    border:none;
+    border-radius:8px;
 }
+
 button {
-    background: #D4AF37;
-    cursor: pointer;
+    background:#D4AF37;
+    cursor:pointer;
+}
+
+/* KPI */
+.kpi-container {
+    display:flex;
+    gap:20px;
+    margin-bottom:20px;
+}
+
+.kpi {
+    flex:1;
+    background:#1E1E1E;
+    padding:20px;
+    border-radius:12px;
+}
+
+/* GRID */
+.grid {
+    display:grid;
+    grid-template-columns:2fr 1fr;
+    gap:20px;
+}
+
+.card {
+    background:#1E1E1E;
+    padding:20px;
+    border-radius:12px;
 }
 </style>
 </head>
@@ -56,80 +76,153 @@ button {
 <body>
 
 <div class="container">
-    <h1>SALES DASHBOARD</h1>
 
+<h1>SALES DASHBOARD</h1>
+
+<div class="input-box">
+    <h3>Input Data</h3>
+    <input id="tanggal" type="date">
+    <input id="produk" placeholder="Produk">
+    <input id="qty" type="number" placeholder="Qty">
+    <input id="harga" type="number" placeholder="Harga">
+    <input id="modal" type="number" placeholder="Harga Modal">
+    <button onclick="tambahData()">Tambah</button>
+    <button onclick="resetData()">Reset</button>
+</div>
+
+<div class="kpi-container">
+    <div class="kpi"><h3>💰 Sales</h3><h2 id="sales">Rp 0</h2></div>
+    <div class="kpi"><h3>📦 Produk</h3><h2 id="produkTotal">0</h2></div>
+    <div class="kpi"><h3>🧾 Orders</h3><h2 id="orders">0</h2></div>
+    <div class="kpi"><h3>📈 Profit</h3><h2 id="profit">Rp 0</h2></div>
+</div>
+
+<div class="grid">
     <div class="card">
-        <h3>Input Data</h3>
-        <input id="produk" placeholder="Produk">
-        <input id="qty" type="number" placeholder="Qty">
-        <input id="harga" type="number" placeholder="Harga">
-        <button onclick="tambahData()">Tambah</button>
+        <h3>Sales per Hari</h3>
+        <canvas id="lineChart"></canvas>
     </div>
 
-    <div class="kpi-container">
-        <div class="kpi"><h3>Total Sales</h3><h2 id="sales">0</h2></div>
-        <div class="kpi"><h3>Total Produk</h3><h2 id="produkTotal">0</h2></div>
-        <div class="kpi"><h3>Orders</h3><h2 id="orders">0</h2></div>
-    </div>
-
-    <div class="grid">
+    <div>
         <div class="card">
-            <canvas id="lineChart"></canvas>
-        </div>
-        <div class="card">
+            <h3>Top Produk</h3>
             <canvas id="barChart"></canvas>
         </div>
+
+        <div class="card" style="margin-top:20px;">
+            <h3>Profit Produk</h3>
+            <canvas id="profitChart"></canvas>
+        </div>
     </div>
+</div>
+
 </div>
 
 <script>
 let data = JSON.parse(localStorage.getItem("data")) || [];
 
+function formatRupiah(angka){
+    return "Rp " + angka.toLocaleString("id-ID");
+}
+
 function tambahData(){
-    let produk = document.getElementById("produk").value;
-    let qty = parseInt(document.getElementById("qty").value);
-    let harga = parseInt(document.getElementById("harga").value);
+    let item = {
+        tanggal: document.getElementById("tanggal").value,
+        produk: document.getElementById("produk").value,
+        qty: parseInt(document.getElementById("qty").value),
+        harga: parseInt(document.getElementById("harga").value),
+        modal: parseInt(document.getElementById("modal").value)
+    };
 
-    data.push({produk, qty, harga});
+    data.push(item);
     localStorage.setItem("data", JSON.stringify(data));
-
     updateDashboard();
 }
 
-function updateDashboard(){
-    let totalSales = 0;
-    let totalProduk = 0;
-    let map = {};
-
-    data.forEach(d => {
-        totalSales += d.qty * d.harga;
-        totalProduk += d.qty;
-
-        if(!map[d.produk]) map[d.produk] = 0;
-        map[d.produk] += d.qty;
-    });
-
-    document.getElementById("sales").innerText = totalSales;
-    document.getElementById("produkTotal").innerText = totalProduk;
-    document.getElementById("orders").innerText = data.length;
-
-    renderChart(map);
+function resetData(){
+    localStorage.clear();
+    location.reload();
 }
 
-let chart;
-function renderChart(map){
-    let labels = Object.keys(map);
-    let values = Object.values(map);
+function updateDashboard(){
+    let sales = 0;
+    let profit = 0;
+    let produkTotal = 0;
 
-    if(chart) chart.destroy();
+    let produkMap = {};
+    let profitMap = {};
+    let dateMap = {};
 
-    chart = new Chart(document.getElementById("barChart"), {
-        type: "bar",
-        data: {
-            labels: labels,
-            datasets: [{
-                data: values,
-                backgroundColor: "#D4AF37"
+    data.forEach(d => {
+        let total = d.qty * d.harga;
+        let prof = (d.harga - d.modal) * d.qty;
+
+        sales += total;
+        profit += prof;
+        produkTotal += d.qty;
+
+        if(!produkMap[d.produk]) produkMap[d.produk]=0;
+        produkMap[d.produk]+=d.qty;
+
+        if(!profitMap[d.produk]) profitMap[d.produk]=0;
+        profitMap[d.produk]+=prof;
+
+        if(!dateMap[d.tanggal]) dateMap[d.tanggal]=0;
+        dateMap[d.tanggal]+=total;
+    });
+
+    document.getElementById("sales").innerText = formatRupiah(sales);
+    document.getElementById("profit").innerText = formatRupiah(profit);
+    document.getElementById("produkTotal").innerText = produkTotal;
+    document.getElementById("orders").innerText = data.length;
+
+    renderCharts(produkMap, profitMap, dateMap);
+}
+
+let chart1, chart2, chart3;
+
+function renderCharts(produkMap, profitMap, dateMap){
+
+    if(chart1) chart1.destroy();
+    if(chart2) chart2.destroy();
+    if(chart3) chart3.destroy();
+
+    chart1 = new Chart(document.getElementById("lineChart"), {
+        type:"line",
+        data:{
+            labels:Object.keys(dateMap),
+            datasets:[{
+                data:Object.values(dateMap),
+                borderColor:"#D4AF37",
+                tension:0.4
+            }]
+        },
+        options:{
+            scales:{
+                x:{grid:{display:false}},
+                y:{grid:{color:"#2A2A2A"}}
+            }
+        }
+    });
+
+    chart2 = new Chart(document.getElementById("barChart"), {
+        type:"bar",
+        data:{
+            labels:Object.keys(produkMap),
+            datasets:[{
+                data:Object.values(produkMap),
+                backgroundColor:"#D4AF37"
+            }]
+        }
+    });
+
+    chart3 = new Chart(document.getElementById("profitChart"), {
+        type:"bar",
+        data:{
+            labels:Object.keys(profitMap),
+            datasets:[{
+                data:Object.values(profitMap),
+                backgroundColor:"#F5E6CA"
             }]
         }
     });
